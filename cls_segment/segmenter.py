@@ -2,7 +2,7 @@ import nltk
 from rouge import Rouge
 
 class TargetMatchSegmenter(object):
-    def __init__(self, evaluator, max_target_sent):
+    def __init__(self, max_target_sent):
         self.evaluator = Rouge(metrics=['rouge-n', 'rouge-l'],
                                max_n=2,
                                limit_length=False,

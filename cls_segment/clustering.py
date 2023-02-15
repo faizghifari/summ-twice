@@ -1,14 +1,15 @@
 import pandas as pd
 
+import utils.tools
+
 from bertopic import BERTopic
 from bertopic.vectorizers import ClassTfidfTransformer
 
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
 
-from cls_segment.segmenter import TargetMatcher
+from cls_segment.segmenter import TargetMatchSegmenter
 from cls_segment.splitter import ClusterSplitter
-
 
 class SegmentClusterProcessor(object):
     def __init__(self, max_model_len, max_target_sent, utter_len_threshold, n_cluster_query):
