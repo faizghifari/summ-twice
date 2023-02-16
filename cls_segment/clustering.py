@@ -57,17 +57,20 @@ class SegmentClusterProcessor(object):
         topics = df2.topic.unique()
         topics.sort()
 
-        cluster_data = []
+        src = []
+        tgt = []
         for t in topics:
             # segments_data = []
             segments = self.splitter.split_utter_speaker(df2, t)
             for s in segments:
                 _, seg_summaries = self.segmenter.seg_based_on_rouge(s, target)
-                cluster_data.append({
-                    "src": s,
-                    "tgt": seg_summaries,
-                })
+                src.append(s)
+                tgt.append(seg_summaries)
+                # cluster_data.append({
+                #     "src": s,
+                #     "tgt": seg_summaries,
+                # })
                 # segments_data.append((s, seg_summaries))
             # cluster_data.append(segments_data)
 
-        return cluster_data
+        return src, tgt
