@@ -23,7 +23,8 @@ class SegmentClusterProcessor(object):
         self.vectorizer_model = CountVectorizer(stop_words="english")
         self.ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
 
-    def process_cluster_summary_utter(self, utter, utter_speaker, target, query):
+    # def process_cluster_summary_utter(self, utter, utter_speaker, target, query):
+    def cluster_utter(self, utter, utter_speaker):
         input_len = 0
         for u in utter:
             input_len += len(u.split())
@@ -57,15 +58,15 @@ class SegmentClusterProcessor(object):
         topics = df2.topic.unique()
         topics.sort()
 
-        src = []
-        tgt = []
+        cluster_data = []
         for t in topics:
             # segments_data = []
             segments = self.splitter.split_utter_speaker(df2, t)
-            for s in segments:
-                _, seg_summaries = self.segmenter.seg_based_on_rouge(s, target)
-                src.append(s)
-                tgt.append(seg_summaries)
+            cluster_data.append(segments)
+            # for s in segments:
+            #     _, seg_summaries = self.segmenter.seg_based_on_rouge(s, target)
+            #     src.append(s)
+            #     tgt.append(seg_summaries)
                 # cluster_data.append({
                 #     "src": s,
                 #     "tgt": seg_summaries,
@@ -73,4 +74,4 @@ class SegmentClusterProcessor(object):
                 # segments_data.append((s, seg_summaries))
             # cluster_data.append(segments_data)
 
-        return src, tgt
+        return cluster_data
