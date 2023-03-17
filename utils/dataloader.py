@@ -1,5 +1,7 @@
 import json
 
+from utils.tools import clean_data
+
 class DataLoader:
     def __init__(self, data_path: str):
         self.data_path = data_path
@@ -27,5 +29,10 @@ class DataLoader:
                 content = clean_data(turn['content'])
                 utter.append(content)
                 utter_speaker.append(turn['speaker'] + ' : ' + content)
-
+            dataset.append({
+                'queries': queries,
+                'targets': targets,
+                'utter': utter,
+                'utter_speaker': utter_speaker,
+            })
         return dataset
