@@ -8,7 +8,7 @@ from bertopic.vectorizers import ClassTfidfTransformer
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-class TopicModel:
+class BERTopicModel:
     def __init__(self, max_len, doc_len_threshold, n_gram_range=(3, 5)):
         self.max_len = max_len
         self.doc_len_threshold = doc_len_threshold
