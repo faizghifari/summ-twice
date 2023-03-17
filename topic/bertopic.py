@@ -116,7 +116,7 @@ class BERTopicModel:
 
         return df
     
-    def get_topics(self, utter, utter_speaker, remove_noise=True):
+    def get_topics_text(self, utter, utter_speaker, remove_noise=True):
         df = self.get_topic_df(utter)
         df['utter_speaker'] = utter_speaker
 
@@ -125,4 +125,19 @@ class BERTopicModel:
             df = self.remove_noise_topic(df)
         df = self.rearrange_topic_value(df)
 
-        return df
+        topics = df['Topic'].unique()  # get unique topics in the dataframe
+        topic_order = []  # initialize list to store the order of topics
+
+        # iterate over rows in the dataframe to determine topic order
+        for _, row in df.iterrows():
+            if row['Topic'] not in topic_order:  # if topic not yet in order list, add it
+                topic_order.append(row['Topic'])
+
+        # create list of texts joined by '\n' for each unique topic in the order determined above
+        texts = []
+        for topic in topic_order:
+            topic_df = df[df['Topic']==topic]
+            text = '\n'.join(topic_df['utter_speaker'].tolist())
+            texts.append(text)
+        
+        return texts
