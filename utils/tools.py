@@ -18,6 +18,14 @@ def get_score(text):
     score = len(text.split())
     return score
 
+def get_max_len_query(dataset):
+    max_len_q = 3
+    for data in dataset:
+        for q in data['queries']:
+        if len(q.split()) > max_len_q:
+            max_len_q = len(q.split())
+    return max_len_q
+
 def clean_data(text: str) -> str:
     """
     Cleans the text by removing stopwords, and replacing special markers with whitespace.
