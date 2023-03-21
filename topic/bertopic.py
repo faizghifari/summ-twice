@@ -1,24 +1,36 @@
 import heapq
 import numpy as np
 
-from utils.tools import get_score
+from umap import UMAP
 
 from bertopic import BERTopic
 from bertopic.vectorizers import ClassTfidfTransformer
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-class BERTopicModel:
+from utils.tools import get_score
+from topic.segmenter import SegmenterInterface
+
+
+class BERTopicModel(SegmenterInterface):
     def __init__(self, max_len, doc_len_threshold, n_gram_range=(3, 5)):
         self.max_len = max_len
         self.doc_len_threshold = doc_len_threshold
 
+        self.umap_model = UMAP(random_state=42)
         self.vectorizer_model = CountVectorizer(stop_words="english")
         self.ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
-        self.topic_model = BERTopic(nr_topics="auto", vectorizer_model=self.vectorizer_model,
-                                    ctfidf_model=self.ctfidf_model, n_gram_range=n_gram_range)
-        self.subtopic_model = BERTopic(nr_topics=None, vectorizer_model=self.vectorizer_model,
-                                       ctfidf_model=self.ctfidf_model, n_gram_range=n_gram_range)
+        self.topic_model = BERTopic(
+            nr_topics="auto",
+            umap_model=self.umap_model,
+            vectorizer_model=self.vectorizer_model,
+            ctfidf_model=self.ctfidf_model,
+            n_gram_range=n_gram_range)
+        self.subtopic_model = BERTopic(
+            nr_topics=None, 
+            vectorizer_model=self.vectorizer_model,
+            ctfidf_model=self.ctfidf_model, 
+            n_gram_range=n_gram_range)
 
     def get_topic_df(self, data):
         """
@@ -31,7 +43,10 @@ class BERTopicModel:
         A dataframe containing the topics for each turn and its specific information.
         """
         topics, _ = self.topic_model.fit_transform(data)
-        _ = self.topic_model.reduce_outliers(data, topics)
+        try:
+            _ = self.topic_model.reduce_outliers(data, topics)
+        except ValueError:
+            pass
         topic_df = self.topic_model.get_document_info(data)
         return topic_df
     
@@ -46,7 +61,7 @@ class BERTopicModel:
         A dataframe containing the subtopics for each turn and its specific information.
         """
         self.subtopic_model.fit_transform(data)
-        subtopic_df = self.subtopic_model.get_document_info(text)
+        subtopic_df = self.subtopic_model.get_document_info(data)
         return subtopic_df
     
     def get_topic_len(self, df):
@@ -62,8 +77,12 @@ class BERTopicModel:
                 if idx not in skipped_idx:
                     topic_df = df[df['Topic'] == idx]
                     text = topic_df['Document'].values.tolist()
-                    subtopic_df = self.get_subtopic_df(text)
-                    subtopics = subtopic_df['Topic'].unique().tolist()
+                    try:
+                        subtopic_df = self.get_subtopic_df(text)
+                        subtopics = subtopic_df['Topic'].unique().tolist()
+                    except (TypeError, ValueError) as e:
+                        skipped_idx.append(idx)
+                        continue
                     if len(subtopics) == 1:
                         skipped_idx.append(idx)
                     else:
@@ -73,22 +92,23 @@ class BERTopicModel:
                         topic_len = self.get_topic_len(df)
                         exc_idx = topic_len[topic_len > self.max_len].index.tolist()
                         break
-        
+       
         for topic in exc_idx:
             rows = df[df['Topic'] == topic]
             # compute scores for each row
             scores = [get_score(row['Document']) for _, row in rows.iterrows()]
             
             # remove the least important rows until topic length is below MAX_TOKENS
-            while topic_len[topic] > self.max_len:
+            while topic_len[topic] > self.max_len and df['Topic'].value_counts()[topic] > 1:
                 # get index of the least important row
                 min_score_idx = heapq.nsmallest(1, range(len(scores)), key=scores.__getitem__)[0]
                 
                 # remove row from dataframe and update topic length and scores
                 row_to_remove = rows.iloc[min_score_idx]
-                df.drop(row_to_remove.name, inplace=True)
-                topic_len = self.get_topic_len(df)
-                scores[min_score_idx] = self.max_len
+                if df['Topic'].value_counts()[topic] > 1:
+                    df.drop(row_to_remove.name, inplace=True)
+                    topic_len = self.get_topic_len(df)
+                    scores[min_score_idx] = self.max_len
 
         return df
     
@@ -116,11 +136,13 @@ class BERTopicModel:
 
         return df
     
-    def get_topics_text(self, utter, utter_speaker, remove_noise=True):
-        df = self.get_topic_df(utter)
-        df['utter_speaker'] = utter_speaker
+    def segmentize(self, input_data, **kwargs):
+        df = self.get_topic_df(input_data['utter'])
+        df['utter_speaker'] = input_data['utter_speaker']
 
         df = self.iterative_recluster(df)
+        
+        remove_noise = kwargs.get('remove_noise', True)
         if remove_noise:
             df = self.remove_noise_topic(df)
         df = self.rearrange_topic_value(df)
