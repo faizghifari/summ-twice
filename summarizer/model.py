@@ -37,7 +37,10 @@ class IterativeSummarizer:
                 else:
                     summary = self.summarize(input_text, max_length=self.max_seg_tgt_len, min_length=self.min_tgt_len)
             else:
-                summary = self.summarize(input_text, max_length=self.max_tgt_len, min_length=self.min_tgt_len)
+                if len(input_text.split()) < self.max_tgt_len:
+                    summary = self.summarize(input_text, max_length=len(input_text.split()), min_length=self.min_tgt_len)
+                else:
+                    summary = self.summarize(input_text, max_length=self.max_tgt_len, min_length=self.min_tgt_len)
             
             all_summaries.append(summary)
         
