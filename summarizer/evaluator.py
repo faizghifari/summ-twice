@@ -9,8 +9,8 @@ class Evaluator:
         self.metric = load_metric(metric_name)
 
     def postprocess_text(self, preds: List[str], labels: List[str]) -> Tuple[List[str], List[str]]:
-        preds = [pred.strip() for pred in preds]
-        labels = [label.strip() for label in labels]
+        preds = [pred.strip().lower() for pred in preds]
+        labels = [label.strip().lower() for label in labels]
 
         # rougeLSum expects newline after each sentence
         preds = ["\n".join(nltk.sent_tokenize(pred)) for pred in preds]
