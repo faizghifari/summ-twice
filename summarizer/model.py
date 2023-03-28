@@ -1,26 +1,31 @@
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+import torch
+
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 
 class IterativeSummarizer:
-    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, device=-1):
+    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, device=torch.device('cpu')):
         self.max_model_len = max_model_len
         self.max_seg_tgt_len = max_seg_tgt_len
         self.max_tgt_len = max_tgt_len
         self.min_tgt_len = min_tgt_len
-
+        
+        self.device = device
         self.num_beams = num_beams
         self.penalty_alpha = penalty_alpha # for contrastive search decoding
 
         # Load the model with the weights and config from the given path
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path).to(device)
-        self.device = device
+        if "opt" in model_name_or_path or "llama" in model_name_or_path:
+            self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path).to(device)
+        else:
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path).to(device)
 
     def summarize(self, text, max_length=50, min_length=5, padding=False):
         input_ids = self.tokenizer(text, max_length=self.max_model_len, truncation=True, padding=padding, return_tensors='pt')['input_ids']
         summary_ids = self.model.generate(
             input_ids.to(self.device), 
-            max_length=max_length, 
-            min_length=min_length, 
+            max_new_tokens=max_length, 
+            min_new_tokens=min_length, 
             num_beams=self.num_beams, 
             penalty_alpha=self.penalty_alpha, 
             early_stopping=True)

@@ -1,4 +1,5 @@
 import json
+import torch
 import argparse
 
 from tqdm import tqdm
@@ -29,7 +30,7 @@ def parse_args():
     parser.add_argument("--remove_noise", type=bool, default=True)
     parser.add_argument("--num_beams", type=int, default=6)
     parser.add_argument("--penalty_alpha", type=int, default=0)
-    parser.add_argument("--cuda_devices", type=int, default=-1)
+    parser.add_argument("--cuda_devices", type=int, default=torch.device('cpu'))
     return parser.parse_args()
 
 
@@ -88,7 +89,7 @@ def main():
 
     results = {
         "ROUGE": rouge_evaluator.compute_metrics(preds, targets), 
-        "BERTScore": results = bertscore_evaluator.compute_metrics(preds, targets)
+        "BERTScore": bertscore_evaluator.compute_metrics(preds, targets)
     } 
 
     with open(args.results_path, "w") as f:
