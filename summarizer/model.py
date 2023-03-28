@@ -1,20 +1,30 @@
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class IterativeSummarizer:
-    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, device=-1):
+    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, device=-1):
         self.max_model_len = max_model_len
         self.max_seg_tgt_len = max_seg_tgt_len
         self.max_tgt_len = max_tgt_len
         self.min_tgt_len = min_tgt_len
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True).to(device)
-        self.summarizer = pipeline("summarization", model=self.model, tokenizer=self.tokenizer, device=device)
+        self.num_beams = num_beams
+        self.penalty_alpha = penalty_alpha # for contrastive search decoding
 
-    def summarize(self, text, max_length=50, min_length=5):
-        summary = self.summarizer(text, max_length=max_length, min_length=min_length, truncation=True)
-        summary = summary[0]['summary_text']
+        # Load the model with the weights and config from the given path
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path).to(device)
+        self.device = device
+
+    def summarize(self, text, max_length=50, min_length=5, padding=False):
+        input_ids = self.tokenizer(text, max_length=self.max_model_len, truncation=True, padding=padding, return_tensors='pt')['input_ids']
+        summary_ids = self.model.generate(
+            input_ids.to(self.device), 
+            max_length=max_length, 
+            min_length=min_length, 
+            num_beams=self.num_beams, 
+            penalty_alpha=self.penalty_alpha, 
+            early_stopping=True)
+        summary = self.tokenizer.decode(summary_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
         
         return summary
 
