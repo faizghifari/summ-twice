@@ -1,12 +1,12 @@
 import nltk
+import evaluate
 import numpy as np
 from typing import List, Tuple
-from datasets import load_metric
 
 
 class Evaluator:
     def __init__(self, metric_name: str):
-        self.metric = load_metric(metric_name)
+        self.metric = evaluate.load(metric_name)
 
     def postprocess_text(self, preds: List[str], labels: List[str]) -> Tuple[List[str], List[str]]:
         preds = [pred.strip().lower() for pred in preds]
