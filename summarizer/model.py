@@ -1,9 +1,10 @@
 import torch
+import deepspeed
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 
 class IterativeSummarizer:
-    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, device=torch.device('cpu')):
+    def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, deepspeed=False, device=torch.device('cpu')):
         self.max_model_len = max_model_len
         self.max_seg_tgt_len = max_seg_tgt_len
         self.max_tgt_len = max_tgt_len
@@ -19,6 +20,31 @@ class IterativeSummarizer:
             self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path).to(device)
         else:
             self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path).to(device)
+        
+        self.deepspeed = deepspeed
+        if deepspeed:
+            ds_config = {
+                "fp16": {
+                    "enabled": False,
+                },
+                "zero_optimization": {
+                    "stage": 3,
+                    "offload_param": {
+                        "device": "cpu",
+                        "pin_memory": True
+                    },
+                    "stage3_param_persistence_threshold": 4e7, # Tune this value depending on the capacity of your GPU. With the current value, the GPU memory will peak at ~24GB.
+                },
+                "train_batch_size": 1,
+            }
+            self.model, _, _, _ = deepspeed.initialize(
+                model=self.model,
+                config_params=ds_config,
+                model_parameters=None,
+                optimizer=None,
+                lr_scheduler=None
+            )
+
 
     def summarize(self, text, max_length=50, min_length=5, padding=False):
         input_ids = self.tokenizer(text, max_length=self.max_model_len, truncation=True, padding=padding, return_tensors='pt')['input_ids']

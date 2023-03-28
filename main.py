@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument("--num_beams", type=int, default=6)
     parser.add_argument("--penalty_alpha", type=int, default=0)
     parser.add_argument("--cuda_devices", type=int, default=torch.device('cpu'))
+    parser.add_argument("--use_deepspeed", type=bool, default=False)
     return parser.parse_args()
 
 
@@ -57,6 +58,7 @@ def main():
         args.min_tgt_len,
         num_beams=args.num_beams,
         penalty_alpha=args.penalty_alpha,
+        deepspeed=args.use_deepspeed,
         device=args.cuda_devices,
     )
 
