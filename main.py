@@ -58,7 +58,7 @@ def main():
         args.min_tgt_len,
         num_beams=args.num_beams,
         penalty_alpha=args.penalty_alpha,
-        deepspeed=args.use_deepspeed,
+        use_deepspeed=args.use_deepspeed,
         device=args.cuda_devices,
     )
 
