@@ -37,7 +37,7 @@ class IterativeSummarizer:
             penalty_alpha=self.penalty_alpha, 
             early_stopping=True)
         summary = self.tokenizer.decode(summary_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        if "opt" in model_name_or_path or "llama" in model_name_or_path:
+        if "opt" in self.model_name_or_path or "llama" in self.model_name_or_path:
             summary = summary.split("\n")[-1]
         
         return summary
