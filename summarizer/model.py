@@ -51,9 +51,15 @@ class IterativeSummarizer:
                 context = "\n".join(all_summaries)
                 if total_len >= self.max_model_len and len(context.split()) > self.max_seg_tgt_len:
                     context = self.summarize("\n".join(all_summaries), max_length=self.max_seg_tgt_len, min_length=self.min_tgt_len)
-                input_text = f"Given this context and dialogue, {query}\n\nContext: {context}\n\nDialogue: {texts[i]}"
+                if "opt" in self.model_name_or_path or "llama" in self.model_name_or_path:
+                    input_text = f"Context: {context}\n\nDialogue: {texts[i]}\n\nGiven this context and dialogue, {query}"
+                else:
+                    input_text = f"Given this context and dialogue, {query}\n\nContext: {context}\n\nDialogue: {texts[i]}"
             else:
-                input_text = f"Given this dialogue, {query}\n\nDialogue: {texts[i]}"
+                if "opt" in self.model_name_or_path or "llama" in self.model_name_or_path:
+                    input_text = f"Dialogue: {texts[i]}\n\nGiven this dialogue, {query}"
+                else:
+                    input_text = f"Given this dialogue, {query}\n\nDialogue: {texts[i]}"
             
             if i != len(texts) - 1:
                 if len(input_text.split()) < self.max_seg_tgt_len:
