@@ -23,12 +23,12 @@ class Evaluator:
         # Some simple post-processing
         preds, targets = self.postprocess_text(preds, targets)
 
-        result = self.metric.compute(predictions=preds, references=targets, use_stemmer=True)
-        # Extract a few results from ROUGE
         if self.metric_name == "rouge":
-            result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+            result = self.metric.compute(predictions=preds, references=targets, use_stemmer=True)
+            result = {key: value * 100 for key, value in result.items() if key}
         elif self.metric_name == "bertscore":
-            result = {key: value * 100 for key, value in result.items() if key != "hashcode"}
-
+            result = self.metric.compute(predictions=preds, references=targets, lang="en")
+            result = {key: np.mean(value) * 100 for key, value in result.items() if key != "hashcode"}
         result = {k: round(v, 4) for k, v in result.items()}
+
         return result
