@@ -27,6 +27,22 @@ class IterativeSummarizer:
             self.num_beams = 1
             self.model = deepspeed.init_inference(self.model, mp_size=1, dtype=torch.float32)
 
+    def postprocess_summary_causallm(self, input_text, summary):
+        input_split = input_text.split("\n\n")
+        split = len(input_split) - 1
+        prompt = input_split[-1]
+        prompt_ = prompt.split()
+        if prompt_[-1] == ".":
+            prompt = " ".join(prompt_[:-1]) + "."
+        
+        if prompt in summary:
+            summary = " ".join(summary.split(prompt)[-1].split())
+        else:
+            summary = "\n\n".join(summary.split("\n\n")[split:])
+            summary = " ".join(summary.split())
+
+        return summary
+
     def summarize(self, text, max_length=50, min_length=5, padding=False):
         input_ids = self.tokenizer(text, max_length=self.max_model_len, truncation=True, padding=padding, return_tensors='pt')['input_ids']
         summary_ids = self.model.generate(
@@ -34,11 +50,11 @@ class IterativeSummarizer:
             max_new_tokens=max_length, 
             min_new_tokens=min_length, 
             num_beams=self.num_beams, 
-            penalty_alpha=self.penalty_alpha, 
-            early_stopping=True)
+            no_repeat_ngram_size=3, 
+            penalty_alpha=self.penalty_alpha)
         summary = self.tokenizer.decode(summary_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
         if "opt" in self.model_name_or_path or "llama" in self.model_name_or_path:
-            summary = summary.split("\n")[-1]
+            summary = self.postprocess_summary_causallm(text, summary)
         
         return summary
 
@@ -50,7 +66,9 @@ class IterativeSummarizer:
                 total_len = len(query.split()) + summary_len + len(texts[i].split())
                 context = "\n".join(all_summaries)
                 if total_len >= self.max_model_len and len(context.split()) > self.max_seg_tgt_len:
-                    context = self.summarize("\n".join(all_summaries), max_length=self.max_seg_tgt_len, min_length=self.min_tgt_len)
+                    all_context = "\n".join(all_summaries)
+                    input_context = f"Summarize this previous context/dialogue.\n\nContext: {all_context}"
+                    context = self.summarize(input_context, max_length=self.max_seg_tgt_len, min_length=self.min_tgt_len)
                 if "opt" in self.model_name_or_path or "llama" in self.model_name_or_path:
                     input_text = f"Context: {context}\n\nDialogue: {texts[i]}\n\nGiven this context and dialogue, {query}"
                 else:
