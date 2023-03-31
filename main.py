@@ -67,7 +67,7 @@ def main():
         segment_texts = segmenter.segmentize(
             data, remove_noise=args.remove_noise
         )
-        for i in range(len(data["queries"])):
+        for i in tqdm(range(len(data["queries"]))):
             all_summaries.append(
                 {
                     "all_summaries": summarizer.summarize_texts(
