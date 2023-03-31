@@ -8,7 +8,7 @@ from topic.bertopic import BERTopicModel
 from topic.linearseg import LinearSegmenter
 
 from summarizer.evaluator import Evaluator
-from summarizer.model import IncrementalSummarizer
+from summarizer.model import Summarizer
 
 from utils.dataloader import DataLoader
 from utils.tools import get_max_len_query
@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument("--max_tgt_len", type=int, required=True)
     parser.add_argument("--min_tgt_len", type=int, required=True)
     parser.add_argument("--segmenter_type", type=str, default="bertopic")
+    parser.add_argument("--summarizer_type", type=str, default="incremental")
     parser.add_argument("--doc_len_threshold", type=int, default=5)
     parser.add_argument("--remove_noise", type=bool, default=True)
     parser.add_argument("--num_beams", type=int, default=6)
@@ -50,7 +51,7 @@ def main():
     elif args.segmenter_type == "linear":
         segmenter = LinearSegmenter(max_length, args.doc_len_threshold)
 
-    summarizer = IncrementalSummarizer(
+    summarizer = Summarizer(
         args.model_name_or_path,
         args.max_model_len,
         args.max_seg_tgt_len,
