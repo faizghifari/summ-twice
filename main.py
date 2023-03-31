@@ -72,7 +72,7 @@ def main():
             all_summaries.append(
                 {
                     "all_summaries": summarizer.summarize_texts(
-                        segment_texts, data["queries"][i]
+                        segment_texts, data["queries"][i], args.summarizer_type
                     )
                 }
             )
