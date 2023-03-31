@@ -95,20 +95,31 @@ class BERTopicModel(SegmenterInterface):
        
         for topic in exc_idx:
             rows = df[df['Topic'] == topic]
-            # compute scores for each row
-            scores = [get_score(row['Document']) for _, row in rows.iterrows()]
+            subtopics = []
+            subtopic_len = 0
+            subtopic_buffer = []
             
-            # remove the least important rows until topic length is below MAX_TOKENS
-            while topic_len[topic] > self.max_len and df['Topic'].value_counts()[topic] > 1:
-                # get index of the least important row
-                min_score_idx = heapq.nsmallest(1, range(len(scores)), key=scores.__getitem__)[0]
+            for idx, row in rows.iterrows():
+                # compute score for the row
+                score = get_score(row['Document'])
                 
-                # remove row from dataframe and update topic length and scores
-                row_to_remove = rows.iloc[min_score_idx]
-                if df['Topic'].value_counts()[topic] > 1:
-                    df.drop(row_to_remove.name, inplace=True)
-                    topic_len = self.get_topic_len(df)
-                    scores[min_score_idx] = self.max_len
+                # if adding the row to the subtopic buffer exceeds the max_len, 
+                # assign a new topic to the subtopic buffer and add it to the dataframe
+                if subtopic_len + score > self.max_len:
+                    new_topic = topic_len.index.max() + 2
+                    df.loc[subtopic_buffer, 'Topic'] = new_topic
+                    subtopics.append(new_topic)
+                    subtopic_buffer = [idx]
+                    subtopic_len = score
+                else:
+                    subtopic_buffer.append(idx)
+                    subtopic_len += score
+                    
+            # assign a new topic to the final subtopic buffer if it exists
+            if subtopic_buffer:
+                new_topic = topic_len.index.max() + 2
+                df.loc[subtopic_buffer, 'Topic'] = new_topic
+                subtopics.append(new_topic)
 
         return df
     
