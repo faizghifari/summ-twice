@@ -3,7 +3,7 @@ import deepspeed
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 
-class IterativeSummarizer:
+class IncrementalSummarizer:
     def __init__(self, model_name_or_path, max_model_len, max_seg_tgt_len, max_tgt_len, min_tgt_len, num_beams=6, penalty_alpha=0, use_deepspeed=False, device=torch.device('cpu')):
         self.max_model_len = max_model_len
         self.max_seg_tgt_len = max_seg_tgt_len
