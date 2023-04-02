@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument("--doc_len_threshold", type=int, default=5)
     parser.add_argument("--remove_noise", type=bool, default=True)
     parser.add_argument("--num_beams", type=int, default=6)
-    parser.add_argument("--penalty_alpha", type=int, default=0)
+    parser.add_argument("--penalty_alpha", type=float, default=0)
     parser.add_argument("--cuda_devices", type=int, default=torch.device('cpu'))
     parser.add_argument("--use_deepspeed", type=bool, default=False)
     return parser.parse_args()
